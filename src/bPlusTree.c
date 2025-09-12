@@ -451,8 +451,8 @@ void saveTreeMermaid(BPTree* tree, char* filename, bool openAfterSave) {
 
     // –¶À¿ Œ“÷±Ω””≤±‡¬Î HTML
     fputs("<!DOCTYPE html><html><head><script src=\"https://unpkg.com/mermaid/dist/mermaid.min.js\"></script>", fp);
-    fputs("<script>mermaid.initialize({startOnLoad:true});</script><title>B+Tree</title></head><body>", fp);
-    fputs("<div class=\"mermaid\">\ngraph TD\n", fp);
+    fputs("<script>mermaid.initialize({startOnLoad:true});</script><title>B+Tree</title></head><body><div class=\"mermaid\">\n", fp);
+    fputs("---\nconfig:\n  theme: 'neutral'\n  themeCSS: '.cluster-label { display: none; }'\n---\ngraph TD\n", fp);
     traverseTree(tree, TRAVERSE_PREORDER, putsNodeMermaid, fp);
     fputs("\tsubgraph leaves\n", fp);
     BPTNode* p = tree->head;
