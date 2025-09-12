@@ -425,9 +425,11 @@ void putsNodeMermaid(BPTNode* node, va_list args) {
         fprintf(fp, "空节点]\n");
     }
 
-    if (node->parent) {
-        fprintf(fp, "\t%p --> %p\n", node, node->parent);
-    }
+    // 与父节点箭头
+    // 加上以后会让图看起来比较乱
+    // if (node->parent) {
+    //     fprintf(fp, "\t%p --> %p\n", node, node->parent);
+    // }
 
     if (!node->isLeaf) {
         // 与子节点箭头
@@ -435,7 +437,8 @@ void putsNodeMermaid(BPTNode* node, va_list args) {
             fprintf(fp, "\t%p -- %d --> %p\n", node, i, node->children[i]);
         }
     } else {
-        // 忽略节点与 next 的箭头，以将所有叶子节点布置在同一层
+        // 与链表下一节点箭头
+        // 忽略该箭头，以将所有叶子节点布置在同一层
         // 否则由于 mermaid 顺序（从上到下），图像会变得非常扭曲丑陋
         // if (node->isLeaf && node->next) {
         //     fprintf(fp, "\t%p --> %p\n", node, node->next);
@@ -443,7 +446,7 @@ void putsNodeMermaid(BPTNode* node, va_list args) {
     }
 }
 
-void saveTreeMermaid(BPTree* tree, char* filename, bool display) {
+void saveTreeMermaid(BPTree* tree, char* filename, bool openAfterSave) {
     FILE* fp = fopen(filename, "w");
 
     // 笑死 我直接硬编码 HTML
@@ -461,7 +464,7 @@ void saveTreeMermaid(BPTree* tree, char* filename, bool display) {
     fclose(fp);
 
     // printf("已生成 B+ 树图像：%s\n", filename);
-    if (display) {
+    if (openAfterSave) {
         system(filename);
     }
 }
