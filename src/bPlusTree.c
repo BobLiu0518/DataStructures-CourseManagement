@@ -129,13 +129,26 @@ NodeFindResult findNode(BPTree* tree, Key key) {
     return (NodeFindResult) { false, nullptr, -1 };
 }
 
+// 给老祖宗烧点纸报信 我家娃考上清华了
+void updateAncestorKeys(BPTNode* node) {
+    BPTNode* p = node;
+    while (p->parent) {
+        int nodeIndex = getNodeIndex(p, p->parent);
+        if (nodeIndex != 0) {
+            p->parent->keys[nodeIndex - 1] = node->keys[0];
+            printDebug("给祖宗烧了个 %llu", node->keys[0]);
+            break;
+        }
+        p = p->parent;
+    }
+}
+
 // 这里曾经有一段把我 CPU 干烧的函数
 // 后来被我优化掉了 永远缅怀
 
 // 在节点中插入关键字
 // 写完这段感觉 CPU 和内存一起烧了
 void nodeInsertKey(BPTNode* node, int index, Key key, void* pointer, int pointerDirection) {
-    // nodeInsertKey(left, left->keyCount 1, 0, nullptr, 1);
     int moveCount = node->keyCount - index;
     memmove(node->keys + index + 1, node->keys + index, moveCount * sizeof(Key));
     memmove(node->pointers + index + 1 + pointerDirection, node->pointers + index + pointerDirection, (moveCount + (!node->isLeaf && !pointerDirection)) * sizeof(void*));
@@ -145,26 +158,21 @@ void nodeInsertKey(BPTNode* node, int index, Key key, void* pointer, int pointer
     if (!node->isLeaf && node->children[index + pointerDirection]) {
         node->children[index + pointerDirection]->parent = node;
     }
+    if (node->isLeaf && index == 0) {
+        updateAncestorKeys(node);
+    }
 }
 
 // 在节点中删除关键字
 // 写完这段感觉启用虚拟内存了
 void nodeRemoveKey(BPTNode* node, int index, int pointerDirection) {
-    if (node->isLeaf && index == 0 && node->keyCount > 1) {
-        BPTNode* p = node;
-        while (p->parent) {
-            int nodeIndex = getNodeIndex(p, p->parent);
-            if (nodeIndex != 0) {
-                p->parent->keys[nodeIndex - 1] = node->keys[1];
-                break;
-            }
-            p = p->parent;
-        }
-    }
     int moveCount = node->keyCount - index - 1;
     memmove(node->keys + index, node->keys + index + 1, moveCount * sizeof(Key));
     memmove(node->pointers + index + pointerDirection, node->pointers + index + 1 + pointerDirection, (moveCount + (!node->isLeaf && !pointerDirection)) * sizeof(void*));
     node->keyCount--;
+    if (node->isLeaf && index == 0 && node->keyCount) {
+        updateAncestorKeys(node);
+    }
 }
 
 // 从 index 起复制关键字
@@ -203,6 +211,9 @@ void nodeMerge(BPTNode* left, BPTNode* right) {
     }
     nodeMoveKeys(right, 0, left, left->keyCount);
     nodeRemoveKey(parent, nodeIndex, 1);
+    if (left->isLeaf) {
+        updateAncestorKeys(left);
+    }
     free(right);
     printDebug("合并结果 [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1);
 }
@@ -355,7 +366,7 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     nodeMerge(merger, merged);
 
     // 和兄弟贴贴了，看看爹怎么说
-    if (!parent->keyCount) {
+    if (tree->root == parent && !parent->keyCount) {
         // 爹：我没意见
         printDebug("爹死了，我才是新爹！");
         free(parent);
@@ -525,14 +536,14 @@ void checkNodeLegitimacy(BPTNode* node, va_list args) {
                 printFatal("节点 %p 错误：[%d] 左儿子键过大", node, currentKey, leftChild);
             }
             if (rightChild->keys[0] < currentKey) {
-                printFatal("节点 %p 错误：[%d] 右儿子过小", node, currentKey, rightChild);
+                printFatal("节点 %p 错误：[%d] 右儿子键过小", node, currentKey, rightChild);
             }
             p = rightChild;
             while (!p->isLeaf) {
                 p = p->children[0];
             }
             if (p->keys[0] != currentKey) {
-                printFatal("节点 %p 错误：[%d] 键值不在直接后继上", currentKey);
+                printFatal("节点 %p 错误：[%d] 键值不在直接后继上", node, currentKey);
             }
         }
     }
