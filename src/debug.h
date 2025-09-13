@@ -7,8 +7,10 @@
 
 #if DEBUG == 1
 
+#define NDEBUG 0
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 static inline void printDebug(char* format, ...) {
     va_list args;
     va_start(args, format);
@@ -28,6 +30,7 @@ static inline void printFatal(char* format, ...) {
 }
 #else
 
+#define NDEBUG 1
 // void printDebug(char* format [[maybe_unused]], ...) { }
 #define printDebug(...) ((void)0)
 #define printFatal(...) ((void)0)

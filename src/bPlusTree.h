@@ -1,9 +1,13 @@
 #ifndef B_PLUS_TREE_H
 #define B_PLUS_TREE_H
 
+#include <assert.h>
+
 #ifndef B_PLUS_TREE_ORDER
 #define B_PLUS_TREE_ORDER 5
 #endif
+
+static_assert(B_PLUS_TREE_ORDER >= 3, "Order must >= 3");
 
 typedef unsigned long long Key;
 
