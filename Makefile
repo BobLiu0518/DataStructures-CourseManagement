@@ -1,5 +1,5 @@
 CC = gcc
-BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -std=c23 -DDEBUG=$(DEBUG) -DB_PLUS_TREE_ORDER=$(ORDER)
+BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -Wno-invalid-source-encoding -std=c23
 
 DEBUG ?= 0
 ORDER ?= 5
@@ -21,7 +21,7 @@ HEADERS = $(wildcard $(SRCDIR)/*.h) $(wildcard $(INCDIR)/*.h)
 all: $(TARGET)
 
 $(TARGET): $(SOURCES) $(HEADERS) Makefile | $(BINDIR)
-	$(CC) $(CFLAGS) -o $@ $(SOURCES) -I$(SRCDIR) -I$(INCDIR)
+	$(CC) $(CFLAGS) -o $@ $(SOURCES) -DDEBUG=$(DEBUG) -DB_PLUS_TREE_ORDER=$(ORDER) -I$(SRCDIR) -I$(INCDIR)
 
 $(BINDIR):
 	@mkdir $(BINDIR)
