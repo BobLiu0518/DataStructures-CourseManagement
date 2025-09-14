@@ -1,3 +1,0 @@
-[submodule "include/libbcrypt"]
-	path = include/libbcrypt
-	url = git@github.com:rg3/libbcrypt.git

@@ -1,7 +1,7 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include <libbcrypt/bcrypt.h>
+#include <sodium.h>
 #include "bPlusTree.h"
 
 #define DATA_NAME_LENGTH 20
@@ -11,7 +11,7 @@ typedef enum { USER_ADMIN, USER_TEACHER, USER_STUDENT } UserType;
 
 typedef struct {
     Key id;
-    char passwordHash[BCRYPT_HASHSIZE + 1];
+    char passwordHash[crypto_pwhash_STRBYTES];
     UserType userType;
     union {
         // π‹¿Ì‘±

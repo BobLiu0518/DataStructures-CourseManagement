@@ -1,11 +1,11 @@
 CC = gcc
-BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -Wno-invalid-source-encoding -std=c23
+BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -Wno-unused-result -Wno-invalid-source-encoding -std=c23
+LIBS = sodium
 
 DEBUG ?= 0
 ORDER ?= 5
 SRCDIR = src
 BINDIR = bin
-INCDIR = include 
 
 ifeq ($(DEBUG), 0)
     TARGET = $(BINDIR)/release.exe
@@ -16,12 +16,12 @@ else
 endif
 
 SOURCES = $(wildcard $(SRCDIR)/*.c)
-HEADERS = $(wildcard $(SRCDIR)/*.h) $(wildcard $(INCDIR)/*.h)
+HEADERS = $(wildcard $(SRCDIR)/*.h)
 
 all: $(TARGET)
 
 $(TARGET): $(SOURCES) $(HEADERS) Makefile | $(BINDIR)
-	$(CC) $(CFLAGS) -o $@ $(SOURCES) -DDEBUG=$(DEBUG) -DB_PLUS_TREE_ORDER=$(ORDER) -I$(SRCDIR) -I$(INCDIR)
+	$(CC) $(CFLAGS) -o $@ $(SOURCES) -DDEBUG=$(DEBUG) -DB_PLUS_TREE_ORDER=$(ORDER) -I$(SRCDIR) $(addprefix -l, $(LIBS))
 
 $(BINDIR):
 	@mkdir $(BINDIR)
