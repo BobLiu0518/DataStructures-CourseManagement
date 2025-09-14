@@ -60,12 +60,13 @@ void traverseTree(BPTree* tree, TraverseOrder order, void(*func)(BPTNode*, va_li
     va_end(args);
 }
 
-BPTree* createTree(void (*freeRecord)(void*)) {
+BPTree* createTree(void (*freeRecord)(void*), bool allowDuplicateKey) {
     BPTree* tree = malloc(sizeof(BPTree));
     *tree = (BPTree){
         .root = nullptr,
         .head = nullptr,
-        .freeRecord = freeRecord
+        .freeRecord = freeRecord,
+        .allowDuplicateKey = allowDuplicateKey
     };
     return tree;
 }
@@ -279,7 +280,7 @@ void checkOverflow(BPTree* tree, BPTNode* node) {
 bool insertRecord(BPTree* tree, Key key, void* record) {
     NodeFindResult r = findNode(tree, key);
     BPTNode* node = r.node;
-    if (r.found) {
+    if (!tree->allowDuplicateKey && r.found) {
         return false;
     }
 
@@ -497,8 +498,10 @@ void checkNodeLegitimacy(BPTNode* node, va_list args) {
     // 判断键关系
     Key lastKey = node->keys[0];
     for (int i = 1; i < node->keyCount; i++) {
-        if (lastKey >= node->keys[i]) {
+        if (lastKey > node->keys[i]) {
             printFatal("节点 %p 错误：键 [%d %d] 顺序异常", node, lastKey, node->keys[i]);
+        } else if (lastKey == node->keys[i] && !tree->allowDuplicateKey) {
+            printFatal("节点 %p 错误：重复键 [%d]", lastKey);
         }
         lastKey = node->keys[i];
     }
@@ -506,8 +509,10 @@ void checkNodeLegitimacy(BPTNode* node, va_list args) {
     if (node->isLeaf) {
         // 判断链表连接关系
         if (node->next) {
-            if (lastKey >= node->next->keys[0]) {
+            if (lastKey > node->next->keys[0]) {
                 printFatal("节点 %p 错误：链表键顺序异常", node, node->next);
+            } else if (lastKey == node->next->keys[0] && !tree->allowDuplicateKey) {
+                printFatal("节点 %p 错误：链表重复键");
             }
         } else {
             BPTNode* p = tree->root;
@@ -532,7 +537,7 @@ void checkNodeLegitimacy(BPTNode* node, va_list args) {
         for (int i = 0; i < node->keyCount; i++) {
             Key currentKey = node->keys[i];
             BPTNode* leftChild = node->children[i], * rightChild = node->children[i + 1], * p;
-            if (leftChild->keys[leftChild->keyCount - 1] >= currentKey) {
+            if (leftChild->keys[leftChild->keyCount - 1] > currentKey) {
                 printFatal("节点 %p 错误：[%d] 左儿子键过大", node, currentKey, leftChild);
             }
             if (rightChild->keys[0] < currentKey) {

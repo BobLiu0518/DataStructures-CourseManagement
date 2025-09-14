@@ -42,9 +42,10 @@ typedef struct BPTree {
     BPTNode* root;
     BPTNode* head;
     void (*freeRecord)(void*);
+    bool allowDuplicateKey;
 } BPTree;
 
-BPTree* createTree(void (*freeRecord)(void*));
+BPTree* createTree(void (*freeRecord)(void*), bool allowDuplicateKey);
 void destroyTree(BPTree* tree);
 bool insertRecord(BPTree* tree, Key key, void* record);
 bool removeRecord(BPTree* tree, Key key);
@@ -54,6 +55,6 @@ void saveTreeMermaid(BPTree* tree, char* filename, bool display);
 void checkTreeLegitimacy(BPTree* tree, bool recordIsKey);
 
 #define DECLARE_B_PLUS_TREE_FUNC(Type) \
-    BPTree* createTree##Type(void (*freeRecord)(Type*)) { return createTree((void (*)(void*))freeRecord); }
+    BPTree* createTree##Type(void (*freeRecord)(Type*), bool allowDuplicateKey) { return createTree((void (*)(void*))freeRecord, allowDuplicateKey); }
 
 #endif
