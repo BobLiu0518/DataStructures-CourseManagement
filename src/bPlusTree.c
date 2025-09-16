@@ -89,8 +89,12 @@ void destroyTree(BPTree* tree) {
 }
 
 // 找 node 位于 parent 中的下标
-int getNodeIndex(BPTNode* node, BPTNode* parent) {
+static inline int getNodeIndex(BPTNode* node) {
     int index = 0;
+    BPTNode* parent = node->parent;
+    if (!parent) {
+        return -1;
+    }
     while (index <= parent->keyCount && parent->children[index] != node) {
         index++;
     }
@@ -134,7 +138,7 @@ NodeFindResult findNode(BPTree* tree, Key key) {
 void updateAncestorKeys(BPTNode* node) {
     BPTNode* p = node;
     while (p->parent) {
-        int nodeIndex = getNodeIndex(p, p->parent);
+        int nodeIndex = getNodeIndex(p);
         if (nodeIndex != 0) {
             p->parent->keys[nodeIndex - 1] = node->keys[0];
             printDebug("给祖宗烧了个 %llu", node->keys[0]);
@@ -191,7 +195,7 @@ void nodeMoveKeys(BPTNode* from, int fromIndex, BPTNode* to, int toIndex) {
     }
 }
 
-Key getSmallestKey(BPTNode* node) {
+static inline Key getSmallestKey(BPTNode* node) {
     BPTNode* p = node;
     while (!p->isLeaf) {
         p = p->children[0];
@@ -204,7 +208,7 @@ Key getSmallestKey(BPTNode* node) {
 void nodeMerge(BPTNode* left, BPTNode* right) {
     printDebug("尝试合并 [%s%llu, +%d] [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1, right->isLeaf ? "#" : "", right->keys[0], right->keyCount - 1);
     BPTNode* parent = left->parent;
-    int nodeIndex = getNodeIndex(left, parent);
+    int nodeIndex = getNodeIndex(left);
     if (!left->isLeaf) {
         nodeInsertKey(left, left->keyCount, parent->keys[nodeIndex], nullptr, 1);
     } else {
@@ -236,7 +240,7 @@ void checkOverflow(BPTree* tree, BPTNode* node) {
     // 先确定分裂上去的爹
     if (parent) {
         // 沿用老爹
-        nodeInsertKey(parent, getNodeIndex(node, parent), node->keys[center], split, 1);
+        nodeInsertKey(parent, getNodeIndex(node), node->keys[center], split, 1);
     } else {
         // 创建新爹
         parent = malloc(sizeof(BPTNode));
@@ -323,7 +327,7 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     }
 
     BPTNode* parent = node->parent;
-    int nodeIndex = getNodeIndex(node, parent);
+    int nodeIndex = getNodeIndex(node);
     printDebug("节点 [%s%llu, +%d] 下溢", node->isLeaf ? "#" : "", node->keys[0], node->keyCount - 1);
 
     // 兄弟兄弟，在家吗？
@@ -379,22 +383,40 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     }
 }
 
-bool removeRecord(BPTree* tree, Key key) {
+// 对于 allowDuplicateKey 的 B+ 树，才需要提供 record
+// 返回被删除的 record 指针，需要注意其内存可能已经被释放
+void* removeRecord(BPTree* tree, Key key, void* record) {
     NodeFindResult r = findNode(tree, key);
     BPTNode* node = r.node;
+    int i = r.i;
     if (!r.found) {
-        return false;
+        return nullptr;
+    }
+
+    if (tree->allowDuplicateKey) {
+        while (node && node->keys[i] == key && node->records[i] != record) {
+            if (i < node->keyCount - 1) {
+                i++;
+            } else {
+                node = node->next;
+                i = 0;
+            }
+        }
+        if (!node || node->keys[i] != key || node->records[i] != record) {
+            return nullptr;
+        }
     }
 
     // 先删了再说
+    record = node->records[i];
     if (tree->freeRecord) {
-        tree->freeRecord(node->records[r.i]);
+        tree->freeRecord(record);
     }
-    nodeRemoveKey(node, r.i, 0);
+    nodeRemoveKey(node, i, 0);
 
     // 考虑下溢出情况
     checkUnderflow(tree, node);
-    return true;
+    return record;
 }
 
 bool replaceRecord(BPTree* tree, Key key, void* record) {
@@ -417,6 +439,25 @@ bool replaceRecord(BPTree* tree, Key key, void* record) {
 void* findRecord(BPTree* tree, Key key) {
     NodeFindResult r = findNode(tree, key);
     return r.found ? r.node->records[r.i] : nullptr;
+}
+
+void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*)) {
+    NodeFindResult r = findNode(tree, min);
+
+    int i = r.i;
+    BPTNode* p = r.node;
+
+    while (p) {
+        for (i = p == r.node ? i : 0; i < p->keyCount; i++) {
+            if (p->keys[i] < min) {
+                continue;
+            } else if (p->keys[i] > max) {
+                return;
+            }
+            operation(p->records[i]);
+        }
+        p = p->next;
+    }
 }
 
 // 将节点信息写入 mermaid
@@ -464,7 +505,7 @@ void saveTreeMermaid(BPTree* tree, char* filename, bool openAfterSave) {
     // 笑死 我直接硬编码 HTML
     fputs("<!DOCTYPE html><html><head><script src=\"https://unpkg.com/mermaid/dist/mermaid.min.js\"></script>", fp);
     fputs("<script>mermaid.initialize({startOnLoad:true});</script><title>B+Tree</title></head><body><div class=\"mermaid\">\n", fp);
-    fputs("---\nconfig:\n  theme: 'neutral'\n  themeCSS: '.cluster-label { display: none; }'\n---\ngraph TD\n", fp);
+    fputs("---\nconfig:\n  theme: 'neutral'\n  look: handDrawn\n  themeCSS: '.cluster-label { display: none; }'\n---\ngraph TD\n", fp);
     traverseTree(tree, TRAVERSE_PREORDER, putsNodeMermaid, fp);
     fputs("\tsubgraph leaves\n", fp);
     BPTNode* p = tree->head;
@@ -475,7 +516,6 @@ void saveTreeMermaid(BPTree* tree, char* filename, bool openAfterSave) {
     fputs("\tend\n</div></body></html>", fp);
     fclose(fp);
 
-    // printf("已生成 B+ 树图像：%s\n", filename);
     if (openAfterSave) {
         system(filename);
     }
@@ -549,6 +589,11 @@ void checkNodeLegitimacy(BPTNode* node, va_list args) {
             }
             if (p->keys[0] != currentKey) {
                 printFatal("节点 %p 错误：[%d] 键值不在直接后继上", node, currentKey);
+            }
+        }
+        for (int i = 0; i <= node->keyCount; i++) {
+            if (node->children[i]->parent != node) {
+                printFatal("节点 %p 错误：第 %d 个儿子的爹不是自己", node, i);
             }
         }
     }

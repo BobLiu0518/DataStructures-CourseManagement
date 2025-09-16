@@ -48,13 +48,15 @@ typedef struct BPTree {
 BPTree* createTree(void (*freeRecord)(void*), bool allowDuplicateKey);
 void destroyTree(BPTree* tree);
 bool insertRecord(BPTree* tree, Key key, void* record);
-bool removeRecord(BPTree* tree, Key key);
+void* removeRecord(BPTree* tree, Key key, void* record);
 bool replaceRecord(BPTree* tree, Key key, void* record);
 void* findRecord(BPTree* tree, Key key);
+void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*));
 void saveTreeMermaid(BPTree* tree, char* filename, bool display);
 void checkTreeLegitimacy(BPTree* tree, bool recordIsKey);
 
 #define DECLARE_B_PLUS_TREE_FUNC(Type) \
-    BPTree* createTree##Type(void (*freeRecord)(Type*), bool allowDuplicateKey) { return createTree((void (*)(void*))freeRecord, allowDuplicateKey); }
+    static inline BPTree* createTree##Type(void (*freeRecord)(Type*), bool allowDuplicateKey) { return createTree((void (*)(void*))freeRecord, allowDuplicateKey); } \
+    static inline void findRecordRange##Type(BPTree* tree, Key min, Key max, void (*operation)(Type*)) { findRecordRange(tree, min, max, (void (*)(void*))operation); }
 
 #endif
