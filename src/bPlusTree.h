@@ -53,6 +53,8 @@ typedef  struct {
 
 BPTree* createTree(void (*freeRecord)(void*), bool allowDuplicateKey);
 void destroyTree(BPTree* tree);
+Key getBiggestKey(BPTree* tree);
+int getTotalKeyCount(BPTree* tree);
 bool insertRecord(BPTree* tree, Key key, void* record);
 void* removeRecord(BPTree* tree, Key key, void* record);
 bool replaceRecord(BPTree* tree, Key key, void* record);

@@ -141,7 +141,7 @@ void updateAncestorKeys(BPTNode* node) {
         int nodeIndex = getNodeIndex(p);
         if (nodeIndex != 0) {
             p->parent->keys[nodeIndex - 1] = node->keys[0];
-            printDebug("给祖宗烧了个 %llu", node->keys[0]);
+            // printDebug("给祖宗烧了个 %llu", node->keys[0]);
             break;
         }
         p = p->parent;
@@ -195,7 +195,7 @@ void nodeMoveKeys(BPTNode* from, int fromIndex, BPTNode* to, int toIndex) {
     }
 }
 
-static inline Key getSmallestKey(BPTNode* node) {
+static inline Key getNodeSmallestKey(BPTNode* node) {
     BPTNode* p = node;
     while (!p->isLeaf) {
         p = p->children[0];
@@ -203,10 +203,31 @@ static inline Key getSmallestKey(BPTNode* node) {
     return p->keys[0];
 }
 
+Key getBiggestKey(BPTree* tree) {
+    BPTNode* p = tree->root;
+    if (!p) {
+        return 0;
+    }
+    while (!p->isLeaf) {
+        p = p->children[p->keyCount];
+    }
+    return p->keys[p->keyCount - 1];
+}
+
+int getTotalKeyCount(BPTree* tree) {
+    int count = 0;
+    BPTNode* p = tree->head;
+    while (p) {
+        count += p->keyCount;
+        p = p->next;
+    }
+    return count;
+}
+
 // 合并兄弟节点
 // 写完这段感觉可以去睡觉了
 void nodeMerge(BPTNode* left, BPTNode* right) {
-    printDebug("尝试合并 [%s%llu, +%d] [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1, right->isLeaf ? "#" : "", right->keys[0], right->keyCount - 1);
+    // printDebug("尝试合并 [%s%llu, +%d] [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1, right->isLeaf ? "#" : "", right->keys[0], right->keyCount - 1);
     BPTNode* parent = left->parent;
     int nodeIndex = getNodeIndex(left);
     if (!left->isLeaf) {
@@ -220,7 +241,7 @@ void nodeMerge(BPTNode* left, BPTNode* right) {
         updateAncestorKeys(left);
     }
     free(right);
-    printDebug("合并结果 [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1);
+    // printDebug("合并结果 [%s%llu, +%d]", left->isLeaf ? "#" : "", left->keys[0], left->keyCount - 1);
 }
 
 void checkOverflow(BPTree* tree, BPTNode* node) {
@@ -235,7 +256,7 @@ void checkOverflow(BPTree* tree, BPTNode* node) {
     // ……啊呀，骇死我力！
     int center = node->keyCount / 2;
     BPTNode* split = malloc(sizeof(BPTNode)), * parent = node->parent;
-    printDebug("节点溢出，将 %llu 插入爹", node->keys[center]);
+    // printDebug("节点溢出，将 %llu 插入爹", node->keys[center]);
 
     // 先确定分裂上去的爹
     if (parent) {
@@ -261,7 +282,7 @@ void checkOverflow(BPTree* tree, BPTNode* node) {
         .parent = parent
     };
     int splitStart = node->isLeaf ? center : center + 1;
-    printDebug("将 %llu 至 %llu 分裂至新节点", node->keys[splitStart], node->keys[node->keyCount - 1]);
+    // printDebug("将 %llu 至 %llu 分裂至新节点", node->keys[splitStart], node->keys[node->keyCount - 1]);
     nodeMoveKeys(node, splitStart, split, 0);
 
     // 家里的主心骨没了！
@@ -328,16 +349,16 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
 
     BPTNode* parent = node->parent;
     int nodeIndex = getNodeIndex(node);
-    printDebug("节点 [%s%llu, +%d] 下溢", node->isLeaf ? "#" : "", node->keys[0], node->keyCount - 1);
+    // printDebug("节点 [%s%llu, +%d] 下溢", node->isLeaf ? "#" : "", node->keys[0], node->keyCount - 1);
 
     // 兄弟兄弟，在家吗？
     BPTNode* rightSibling = nodeIndex < parent->keyCount ? parent->children[nodeIndex + 1] : nullptr;
     if (rightSibling && rightSibling->keyCount > (B_PLUS_TREE_ORDER + 1) / 2 - 1) {
         // 兄弟兄弟，借我点钱
-        printDebug("向右兄弟借了 %llu", rightSibling->keys[0]);
-        nodeInsertKey(node, node->keyCount, node->isLeaf ? rightSibling->keys[0] : getSmallestKey(rightSibling), rightSibling->pointers[0], !rightSibling->isLeaf);
+        // printDebug("向右兄弟借了 %llu", rightSibling->keys[0]);
+        nodeInsertKey(node, node->keyCount, node->isLeaf ? rightSibling->keys[0] : getNodeSmallestKey(rightSibling), rightSibling->pointers[0], !rightSibling->isLeaf);
         nodeRemoveKey(rightSibling, 0, 0);
-        parent->keys[nodeIndex] = getSmallestKey(rightSibling);
+        parent->keys[nodeIndex] = getNodeSmallestKey(rightSibling);
         return;
     }
 
@@ -345,10 +366,10 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     BPTNode* leftSibling = nodeIndex > 0 ? parent->children[nodeIndex - 1] : nullptr;
     if (leftSibling && leftSibling->keyCount > (B_PLUS_TREE_ORDER + 1) / 2 - 1) {
         // 兄弟兄弟，借我点钱
-        printDebug("向左兄弟借了 %llu", leftSibling->keys[leftSibling->keyCount - 1]);
-        nodeInsertKey(node, 0, node->isLeaf ? leftSibling->keys[leftSibling->keyCount - 1] : getSmallestKey(node->children[0]), leftSibling->pointers[leftSibling->keyCount - leftSibling->isLeaf], 0);
+        // printDebug("向左兄弟借了 %llu", leftSibling->keys[leftSibling->keyCount - 1]);
+        nodeInsertKey(node, 0, node->isLeaf ? leftSibling->keys[leftSibling->keyCount - 1] : getNodeSmallestKey(node->children[0]), leftSibling->pointers[leftSibling->keyCount - leftSibling->isLeaf], 0);
         nodeRemoveKey(leftSibling, leftSibling->keyCount - 1, !leftSibling->isLeaf);
-        parent->keys[nodeIndex - 1] = getSmallestKey(node);
+        parent->keys[nodeIndex - 1] = getNodeSmallestKey(node);
         return;
     }
 
@@ -356,12 +377,12 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     BPTNode* merger, * merged;
     if (rightSibling) {
         // 兄弟，你好香
-        printDebug("把右兄弟吃掉");
+        // printDebug("把右兄弟吃掉");
         merger = node;
         merged = rightSibling;
     } else if (leftSibling) {
         // “兄弟，你好香”
-        printDebug("被左兄弟吃掉");
+        // printDebug("被左兄弟吃掉");
         merger = leftSibling;
         merged = node;
     } else {
@@ -373,7 +394,7 @@ void checkUnderflow(BPTree* tree, BPTNode* node) {
     // 和兄弟贴贴了，看看爹怎么说
     if (tree->root == parent && !parent->keyCount) {
         // 爹：我没意见
-        printDebug("爹死了，我才是新爹！");
+        // printDebug("爹死了，我才是新爹！");
         free(parent);
         tree->root = merger;
         merger->parent = nullptr;
