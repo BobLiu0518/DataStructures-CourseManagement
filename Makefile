@@ -1,5 +1,5 @@
 CC = gcc
-BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -Wno-unused-result -Wno-invalid-source-encoding -std=c23
+BASE_CFLAGS = -Wall -Wextra -Wshadow -Wno-comment -Wno-unused-result -std=c23
 LIBS = sodium
 
 DEBUG ?= 0
