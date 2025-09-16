@@ -21,7 +21,7 @@ void pause() {
         WaitForSingleObject(hConsoleInput, INFINITE);
         ReadConsoleInput(hConsoleInput, &record, 1, &num_read);
 
-        if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown) {
+        if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown && record.Event.KeyEvent.uChar.AsciiChar != 0) {
             break;
         } else if (record.EventType == MOUSE_EVENT && record.Event.MouseEvent.dwEventFlags == 0 && record.Event.MouseEvent.dwButtonState == 0) {
             break;
