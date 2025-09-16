@@ -463,7 +463,7 @@ void* findRecord(BPTree* tree, Key key) {
 }
 
 void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*)) {
-    NodeFindResult r = findNode(tree, min);
+    NodeFindResult r = findNode(tree, min - tree->allowDuplicateKey);
 
     int i = r.i;
     BPTNode* p = r.node;
@@ -482,7 +482,7 @@ void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*)) {
 }
 
 RecordArray findRecordRangeArray(BPTree* tree, Key min, Key max) {
-    NodeFindResult r = findNode(tree, min);
+    NodeFindResult r = findNode(tree, min - tree->allowDuplicateKey);
 
     int i = r.i;
     BPTNode* p = r.node;
