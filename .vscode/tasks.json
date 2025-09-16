@@ -13,7 +13,16 @@
         {
             "label": "Build release",
             "type": "shell",
-            "command": "make DEBUG=0",
+            "command": "make rebuild DEBUG=0",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Run release",
+            "type": "shell",
+            "command": "make run DEBUG=0",
             "group": {
                 "kind": "build",
                 "isDefault": false
