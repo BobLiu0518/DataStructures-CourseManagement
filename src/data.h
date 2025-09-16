@@ -12,6 +12,8 @@
 #define DATA_PLACE_OF_ORIGIN_LENGTH 6
 
 #define DATA_COURSE_NAME_LENGTH 60
+#define DATA_COURSE_TIME_LENGTH 15
+#define DATA_COURSE_CLASSROOM_LENGTH 15
 
 #define DATA_MATERIAL_TITLE_LENGTH 60
 #define DATA_MATERIAL_PATH_LENGTH 100
@@ -49,6 +51,8 @@ typedef struct {
     char name[DATA_COURSE_NAME_LENGTH + 1]; // 课程名
     int credit; // 学分的十倍
     Key teacherId; // 任课教师工号
+    char time[DATA_COURSE_TIME_LENGTH + 1]; // 上课时间
+    char classroom[DATA_COURSE_CLASSROOM_LENGTH + 1]; // 上课教室
 } Course;
 
 // 按照数据库原理课的说法，这里 Course 和 Section 应当分开
