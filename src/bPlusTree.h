@@ -45,6 +45,12 @@ typedef struct BPTree {
     bool allowDuplicateKey;
 } BPTree;
 
+typedef  struct {
+    void** arr;
+    int total;
+    int capacity;
+} RecordArray;
+
 BPTree* createTree(void (*freeRecord)(void*), bool allowDuplicateKey);
 void destroyTree(BPTree* tree);
 bool insertRecord(BPTree* tree, Key key, void* record);
@@ -52,6 +58,7 @@ void* removeRecord(BPTree* tree, Key key, void* record);
 bool replaceRecord(BPTree* tree, Key key, void* record);
 void* findRecord(BPTree* tree, Key key);
 void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*));
+RecordArray findRecordRangeArray(BPTree* tree, Key min, Key max);
 void saveTreeMermaid(BPTree* tree, char* filename, bool display);
 void checkTreeLegitimacy(BPTree* tree, bool recordIsKey);
 

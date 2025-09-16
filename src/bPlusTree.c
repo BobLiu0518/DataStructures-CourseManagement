@@ -460,6 +460,40 @@ void findRecordRange(BPTree* tree, Key min, Key max, void (*operation)(void*)) {
     }
 }
 
+RecordArray findRecordRangeArray(BPTree* tree, Key min, Key max) {
+    NodeFindResult r = findNode(tree, min);
+
+    int i = r.i;
+    BPTNode* p = r.node;
+
+    RecordArray result = (RecordArray){
+        .arr = calloc(32, sizeof(void*)),
+        .capacity = 32,
+        .total = 0
+    };
+    while (p) {
+        for (i = p == r.node ? i : 0; i < p->keyCount; i++) {
+            if (p->keys[i] < min) {
+                continue;
+            } else if (p->keys[i] > max) {
+                return result;
+            }
+            result.arr[result.total++] = p->records[i];
+            if (result.total >= result.capacity) {
+                // 总觉得这样返回一个数组有点太丑陋了，但是好像也没有别的办法。
+                // 对于我的使用场景（翻页儿的全体列表），顺序表是绝对优于链表的。
+                void** expanded = calloc(2 * result.capacity, sizeof(void*));
+                memcpy(expanded, result.arr, result.total * sizeof(void*));
+                free(result.arr);
+                result.arr = expanded;
+                result.capacity *= 2;
+            }
+        }
+        p = p->next;
+    }
+    return result;
+}
+
 // 将节点信息写入 mermaid
 // args 参数：FILE* fp
 void putsNodeMermaid(BPTNode* node, va_list args) {
