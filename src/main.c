@@ -167,7 +167,7 @@ void queryCourse() {
     displayInput("课程编号", "%llu", &courseId);
     Course* course = findRecord(CoursesIndexId, courseId);
     if (!course) {
-        printf(Yellow("未找到课程 %llu。"), courseId);
+        printf(Yellow("课程 %llu 不存在。"), courseId);
         pause();
         return;
     }
@@ -342,8 +342,8 @@ void queryGPA(User* student) {
         Key studentId;
         displayInput("学生学号", "%llu", &studentId);
         student = findRecord(UsersIndexId, studentId);
-        if (!student) {
-            printf(Red("错误：")"学生不存在。");
+        if (!student || student->userType != USER_STUDENT) {
+            printf(Red("失败：")"学生不存在。");
             pause();
             return;
         }
@@ -404,7 +404,7 @@ void statAvgSelected() {
     displayInput("教师工号", "%llu", &teacherId);
     User* teacher = findRecord(UsersIndexId, teacherId);
     if (!teacher) {
-        printf(Red("错误：")"教师不存在。");
+        printf(Red("失败：")"教师不存在。");
         pause();
         return;
     }
@@ -533,9 +533,9 @@ void modifyMaterial(Course* course) {
             printf("请将学习资料放置在\nstorage\\materials 文件夹下。\n");
             displayInput("文件名", "%[^\n]", filepath + strlen(filepath));
 
-            FILE* fp = fopen(filepath, "r");
+            FILE* fp = fopen(filepath, "rb");
             if (!fp) {
-                printf(Red("错误：")"文件%s不存在。", filepath);
+                printf(Red("失败：")"文件%s不存在。", filepath);
                 pause();
                 continue;
             }
@@ -576,7 +576,7 @@ void modifyScore(Course* course) {
     displayInput("学生学号", "%llu", &studentId);
     User* student = findRecord(UsersIndexId, studentId);
     if (!student || student->userType != USER_STUDENT) {
-        printf(Red("错误：")"未找到学生。");
+        printf(Red("失败：")"学生不存在。");
         pause();
         return;
     }
@@ -604,7 +604,7 @@ void modifyScore(Course* course) {
     double score;
     displayInput("成绩", "%lf", &score);
     if (score < 0 && score > 100) {
-        printf(Red("错误：")"成绩不合法。");
+        printf(Red("失败：")"成绩不合法。");
         pause();
         return;
     }
@@ -696,6 +696,22 @@ RecordArray takenCourses(RecordArray takes) {
     return takes;
 }
 
+void showScore(User* user, Course* course, Take* take) {
+    displayTitle("管理系统 - 课程成绩");
+    printf("学生: "BlackBright("%s (%llu)\n"), user->name, user->id);
+    printf("课程: "BlackBright("%s (%llu)\n"), course->name, course->id);
+    if (take->score == DATA_SCORE_NOT_SET) {
+        printf(Yellow("成绩尚未录入，请联系任课教师\n"));
+    } else if (take->score < 600) {
+        printf(Yellow("总评成绩 %.1lf，不合格\n"), take->score / 10.0);
+    } else if (take->score < 900) {
+        printf(Green("总评成绩 %.1lf，合格\n"), take->score / 10.0);
+    } else {
+        printf(Green("总评成绩 %.1lf，优秀\n"), take->score / 10.0);
+    }
+    pause();
+}
+
 void viewCourse(User* user, Course* course) {
     Take* take = findRecord(TakesIndexCompound, user->id * 100000000ULL + course->id);
     if (!take) {
@@ -716,19 +732,7 @@ void viewCourse(User* user, Course* course) {
             showCourseDetail(course, true);
             break;
         case 1:
-            displayTitle("管理系统 - 课程成绩");
-            printf("学生: "BlackBright("%s (%llu)\n"), user->name, user->id);
-            printf("课程: "BlackBright("%s (%llu)\n"), course->name, course->id);
-            if (take->score == DATA_SCORE_NOT_SET) {
-                printf(Yellow("成绩尚未录入，请联系任课教师\n"));
-            } else if (take->score < 600) {
-                printf(Yellow("总评成绩 %.1lf，不合格\n"), take->score / 10.0);
-            } else if (take->score < 900) {
-                printf(Green("总评成绩 %.1lf，合格\n"), take->score / 10.0);
-            } else {
-                printf(Green("总评成绩 %.1lf，优秀\n"), take->score / 10.0);
-            }
-            pause();
+            showScore(user, course, take);
             break;
         case 2:
             showMaterial(course);
@@ -861,7 +865,7 @@ void deleteUser() {
     if (removeRecord(UsersIndexId, id, nullptr)) {
         printf(Green("删除成功。"));
     } else {
-        printf(Red("错误：")"未找到该用户。");
+        printf(Red("失败：")"用户不存在。");
     }
     pause();
 }
